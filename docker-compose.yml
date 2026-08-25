@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    container_name: opsflow-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://opsflow:secretpassword@postgres:5432/opsflow_db
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=http://localhost:3000,http://localhost
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - opsflow_network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: opsflow-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - opsflow_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: opsflow-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=opsflow
+      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_DB=opsflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - opsflow_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: opsflow-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - opsflow_network
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: opsflow-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=UTC
+    volumes:
+      - n8ndata:/home/node/.n8n
+    networks:
+      - opsflow_network
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:
+  n8ndata:
+
+networks:
+  opsflow_network:
+    driver: bridge
