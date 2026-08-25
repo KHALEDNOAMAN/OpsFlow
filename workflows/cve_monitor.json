@@ -1,0 +1,39 @@
+{
+  "name": "OpsFlow CVE Monitor",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 6 * * *" }] } },
+      "name": "Schedule Trigger (Daily)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/cve/scan",
+        "bodyParametersUi": {
+          "parameter": [
+            { "name": "products", "value": "VMware,ESXi,vCenter,Linux,Docker" }
+          ]
+        }
+      },
+      "name": "Trigger Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/cve/match-assets"
+      },
+      "name": "Match Assets",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 680, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Daily)": { "main": [ [ { "node": "Trigger Sync", "type": "main", "index": 0 } ] ] },
+    "Trigger Sync": { "main": [ [ { "node": "Match Assets", "type": "main", "index": 0 } ] ] }
+  },
+  "active": true
+}
