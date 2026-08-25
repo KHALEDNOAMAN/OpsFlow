@@ -1,0 +1,54 @@
+{
+  "name": "OpsFlow Server Monitor",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "*/5 * * * *" }] } },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": { "url": "http://backend:8000/api/servers/", "method": "GET" },
+      "name": "Get Servers",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": { "url": "={{ 'http://backend:8000/api/servers/' + $json.id + '/check' }}", "method": "POST" },
+      "name": "Check Server",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 680, 300 ]
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [{ "value1": "={{ $json.status }}", "operation": "equal", "value2": "DOWN" }] }
+      },
+      "name": "If DOWN",
+      "type": "n8n-nodes-base.if",
+      "position": [ 900, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/incidents/",
+        "bodyParametersUi": {
+          "parameter": [
+            { "name": "server_id", "value": "={{ $json.server_id }}" },
+            { "name": "title", "value": "Server Down Automated Alert" },
+            { "name": "severity", "value": "HIGH" }
+          ]
+        }
+      },
+      "name": "Create Incident",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 1120, 200 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [ [ { "node": "Get Servers", "type": "main", "index": 0 } ] ] },
+    "Get Servers": { "main": [ [ { "node": "Check Server", "type": "main", "index": 0 } ] ] },
+    "Check Server": { "main": [ [ { "node": "If DOWN", "type": "main", "index": 0 } ] ] },
+    "If DOWN": { "main": [ [ { "node": "Create Incident", "type": "main", "index": 0 } ] ] }
+  },
+  "active": true
+}
