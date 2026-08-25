@@ -1,0 +1,29 @@
+{
+  "name": "OpsFlow Incident Recovery",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "incident-recovery-webhook" },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'http://backend:8000/api/incidents/' + $json.body.incident_id }}",
+        "bodyParametersUi": {
+          "parameter": [
+            { "name": "status", "value": "RESOLVED" }
+          ]
+        }
+      },
+      "name": "Resolve Incident",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 460, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [ [ { "node": "Resolve Incident", "type": "main", "index": 0 } ] ] }
+  },
+  "active": true
+}
