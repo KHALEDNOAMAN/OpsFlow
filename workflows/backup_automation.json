@@ -1,0 +1,36 @@
+{
+  "name": "OpsFlow Backup Automation",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 2 * * *" }] } },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": { "url": "http://backend:8000/api/servers/", "method": "GET" },
+      "name": "Get Servers",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/api/backups/",
+        "bodyParametersUi": {
+          "parameter": [
+            { "name": "server_id", "value": "={{ $json.id }}" }
+          ]
+        }
+      },
+      "name": "Trigger Backup",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [ 680, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [ [ { "node": "Get Servers", "type": "main", "index": 0 } ] ] },
+    "Get Servers": { "main": [ [ { "node": "Trigger Backup", "type": "main", "index": 0 } ] ] }
+  },
+  "active": true
+}
